@@ -32,7 +32,7 @@ const updateCoinBody = z.object({
 })
 
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/coins', (req: Request, res: Response) => {
     const parsed = coinsQuery.safeParse(req.query)
     if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.issues })

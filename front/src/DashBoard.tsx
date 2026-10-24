@@ -29,7 +29,7 @@ export function DashBoard() {
         async function fetchCoins(): Promise<void> {
             try {
                 const params = new URLSearchParams({ page: currentPage, limit: limit.toString(), search: q })
-                const res = await fetch(`http://localhost:3000/?${params}`, { signal: controller.signal })
+                const res = await fetch(`http://localhost:3000/coins?${params}`, { signal: controller.signal })
                 if (!res.ok) throw new Error('Request Failed')
                 const data = await res.json()
                 setSearchParams(params)

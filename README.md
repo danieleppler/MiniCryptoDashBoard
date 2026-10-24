@@ -44,7 +44,7 @@ port for requests to succeed.
 
 | Method | Path               | Description                                      |
 | ------ | ------------------ | ------------------------------------------------- |
-| GET    | `/`                | List coins, paginated (`page`, `limit`, `search`) |
+| GET    | `/coins`           | List coins, paginated (`page`, `limit`, `search`) |
 | GET    | `/coins/stream`    | SSE stream of `coin-update` events                |
 | PATCH  | `/coins/:coinId`   | Update a coin's value; broadcasts the change       |
 
