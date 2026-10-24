@@ -3,6 +3,8 @@ import cors from "cors"
 import { type coinReponseDto } from './modals/coinDto.ts'
 import { coinRepository } from './repositories/coinRepository.ts'
 import { addClient, removeClient, broadcast } from './sse.ts'
+import { notFound } from './middlewares/notFound.ts'
+import { errorHandler } from './middlewares/errorHandler.ts'
 import { z } from 'zod'
 
 const app: Express = express()
@@ -76,6 +78,9 @@ app.patch('/coins/:coinId', (req: Request, res: Response) => {
 
     res.send(coin)
 })
+
+app.use(notFound)
+app.use(errorHandler)
 
 app.listen(port, () => {
     console.log(`server listens on port ${port}`)

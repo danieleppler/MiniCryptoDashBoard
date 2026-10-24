@@ -64,3 +64,24 @@ This is just an abstraction boundary, not a new persistence mechanism - the data
 the same in-memory array. The payoff is that swapping the array for a real database later
 only means writing a new `CoinRepository` implementation; route handlers and validation
 stay untouched.
+
+## DTOs and zod validation at the API boundary
+`back/modals/coinDto.ts` defines the shapes that cross the HTTP boundary (`coinDto`,
+`coinReponseDto`), separate from `back/modals/coin.ts`'s domain `coin` type. The DTO is
+what the repository returns and what routes send back - it's the contract with the
+frontend, so it can evolve independently of whatever the storage layer looks like
+internally.
+
+Validation of anything coming from the client happens with zod schemas defined alongside
+the routes in `back/index.ts`:
+- `coinsQuery` - `page`/`limit`/`search` on `GET /`, with `z.coerce` turning query-string
+  values into numbers and defaults (`page=1`, `limit=10`) applied when absent.
+- `coinIdParam` - `coinId` on `PATCH /coins/:coinId`, coerced to a positive int.
+- `updateCoinBody` - `coinValue` on the same route, coerced to a positive number.
+
+Each route calls `.safeParse` (never the throwing `.parse`) and returns `400` with
+`parsed.error.issues` directly if validation fails, before any repository/business logic
+runs. This keeps "is the request well-formed" entirely separate from "does the thing it's
+asking about exist" (which is a `404` from the repository instead, e.g. updating an
+unknown `coinId`) and from unexpected failures (which fall through to the `errorHandler`
+middleware and come back as `500`/`400` depending on the error, not here).
