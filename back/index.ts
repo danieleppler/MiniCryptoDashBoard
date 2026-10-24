@@ -1,7 +1,8 @@
 import express, { type Express, type Request, type Response } from 'express'
 import cors from "cors"
-import { type coinReponseDto, type coinDto } from './modals/coinDto.ts'
-import { coins } from './data/coins.ts'
+import { type coinReponseDto } from './modals/coinDto.ts'
+import { coinRepository } from './repositories/coinRepository.ts'
+import { addClient, removeClient, broadcast } from './sse.ts'
 import { z } from 'zod'
 
 const app: Express = express()
@@ -20,6 +21,14 @@ const coinsQuery = z.object({
     search: z.string().trim().optional()
 })
 
+const coinIdParam = z.object({
+    coinId: z.coerce.number().int().positive()
+})
+
+const updateCoinBody = z.object({
+    coinValue: z.coerce.number().positive()
+})
+
 
 app.get('/', (req: Request, res: Response) => {
     const parsed = coinsQuery.safeParse(req.query)
@@ -27,14 +36,45 @@ app.get('/', (req: Request, res: Response) => {
         return res.status(400).json({ error: parsed.error.issues })
     }
     const { page, limit, search } = parsed.data
-    let coinsResult = search ? coins.filter((x) => x.coinName.toLowerCase().includes(search.toLocaleLowerCase())) : coins
-    console.log(coinsResult)
+    const allCoins = coinRepository.findAll()
+    let coinsResult = search ? allCoins.filter((x) => x.coinName.toLowerCase().includes(search.toLocaleLowerCase())) : allCoins
+
     coinsResult = coinsResult.slice((page - 1) * limit, (page - 1) * limit + limit)
     let coinReponseDto: coinReponseDto = {
         coins: coinsResult,
-        total: coins.length
+        total: allCoins.length
     }
     res.send(coinReponseDto)
+})
+
+app.get('/coins/stream', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    res.flushHeaders()
+
+    addClient(res)
+    req.on('close', () => removeClient(res))
+})
+
+app.patch('/coins/:coinId', (req: Request, res: Response) => {
+    const parsedParams = coinIdParam.safeParse(req.params)
+    if (!parsedParams.success) {
+        return res.status(400).json({ error: parsedParams.error.issues })
+    }
+    const parsedBody = updateCoinBody.safeParse(req.body)
+    if (!parsedBody.success) {
+        return res.status(400).json({ error: parsedBody.error.issues })
+    }
+
+    const coin = coinRepository.updateValue(parsedParams.data.coinId, parsedBody.data.coinValue)
+    if (!coin) {
+        return res.status(404).json({ error: 'Coin not found' })
+    }
+
+    broadcast('coin-update', coin)
+
+    res.send(coin)
 })
 
 app.listen(port, () => {

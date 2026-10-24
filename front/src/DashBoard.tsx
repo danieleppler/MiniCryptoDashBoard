@@ -52,6 +52,19 @@ export function DashBoard() {
         return () => clearTimeout(timeout)
     }, [searchQuery])
 
+    useEffect(() => {
+        const eventSource = new EventSource("http://localhost:3000/coins/stream")
+
+        eventSource.addEventListener("coin-update", (event) => {
+            const updatedCoin: coin = JSON.parse(event.data)
+            setCoins(prev => prev?.map(coin =>
+                coin.coinId === updatedCoin.coinId ? updatedCoin : coin
+            ))
+        })
+
+        return () => eventSource.close()
+    }, [])
+
     function changePage(pagesToChange: number): void {
         setCurrentPage((+currentPage + pagesToChange).toString())
     }
