@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useRef } from "react"
+import "./DashBoard.css"
 
 type coin = {
     coinId: number,
@@ -69,35 +70,48 @@ export function DashBoard() {
         setCurrentPage((+currentPage + pagesToChange).toString())
     }
 
+    const totalPages = Math.ceil(total.current / +limit)
+
     return (
-        <div>
-            <input type="text" onChange={(e) => {
-                setSearchQuery(e.target.value)
-            }} />
-            <table border={1}>
-                <thead>
-                    <tr>
-                        <th>Date Updated</th>
-                        <th>Coin Name</th>
-                        <th>Coin Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {
-                        coins?.map(coin => {
-                            return (
-                                < tr key={coin.coinId}>
-                                    <td>{coin.lastUpdate}</td>
-                                    <td>{coin.coinName}</td>
-                                    <td>{coin.coinValue}$</td>
-                                </tr>
-                            )
-                        })
-                    }
-                </tbody>
-            </table>
-            <button disabled={currentPage == "1"} onClick={() => changePage(-1)}>Prev</button>
-            <button disabled={currentPage == (Math.ceil(total.current / +limit)).toString()} onClick={() => changePage(1)}>Next</button>
-        </div >
+        <div className="dashboard">
+            <h1 className="dashboard__title">Crypto Dashboard</h1>
+            <input
+                className="dashboard__search"
+                type="text"
+                placeholder="Search coins..."
+                onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                }}
+            />
+            <div className="dashboard__table-wrap">
+                <table className="dashboard__table">
+                    <thead>
+                        <tr>
+                            <th>Date Updated</th>
+                            <th>Coin Name</th>
+                            <th>Coin Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            coins?.map(coin => {
+                                return (
+                                    <tr key={coin.coinId}>
+                                        <td className="dashboard__date">{new Date(coin.lastUpdate).toLocaleString()}</td>
+                                        <td>{coin.coinName}</td>
+                                        <td className="dashboard__value">${coin.coinValue.toLocaleString()}</td>
+                                    </tr>
+                                )
+                            })
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div className="dashboard__pagination">
+                <span className="dashboard__page-label">Page {currentPage} of {totalPages || 1}</span>
+                <button disabled={currentPage == "1"} onClick={() => changePage(-1)}>Prev</button>
+                <button disabled={currentPage == totalPages.toString()} onClick={() => changePage(1)}>Next</button>
+            </div>
+        </div>
     )
 }
