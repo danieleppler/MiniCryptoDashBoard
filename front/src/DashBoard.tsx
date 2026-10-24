@@ -22,18 +22,26 @@ export function DashBoard() {
     console.log(total.current / +limit)
 
     useEffect(() => {
+        const controller = new AbortController()
+
         //async call
         async function fetchCoins(): Promise<void> {
-
-            const params = new URLSearchParams({ page: currentPage, limit: limit.toString(), search: q })
-            const res = await fetch(`http://localhost:3000/?${params}`)
-            if (!res.ok) throw new Error('Request Failed')
-            const data = await res.json()
-            setSearchParams(params)
-            setCoins(data.coins)
-            total.current = data.total
+            try {
+                const params = new URLSearchParams({ page: currentPage, limit: limit.toString(), search: q })
+                const res = await fetch(`http://localhost:3000/?${params}`, { signal: controller.signal })
+                if (!res.ok) throw new Error('Request Failed')
+                const data = await res.json()
+                setSearchParams(params)
+                setCoins(data.coins)
+                total.current = data.total
+            } catch (err) {
+                if (err instanceof DOMException && err.name === "AbortError") return
+                throw err
+            }
         }
         fetchCoins()
+
+        return () => controller.abort()
     }, [q, currentPage, limit])
 
     useEffect(() => {
